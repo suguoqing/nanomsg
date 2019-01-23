@@ -89,27 +89,28 @@ int nn_msgqueue_send (struct nn_msgqueue *self, struct nn_msg *msg)
         return -EAGAIN;
 
     /*  Adjust the statistics. */
-    ++self->count;
-    self->mem += msgsz;
+    self->count=1;//++self->count;
+    self->mem=msgsz;//self->mem += msgsz;
 
     /*  Move the content of the message to the pipe. */
+    nn_msg_term(&self->out.chunk->msgs [self->out.pos]);
     nn_msg_mv (&self->out.chunk->msgs [self->out.pos], msg);
-    ++self->out.pos;
+    //++self->out.pos;
 
     /*  If there's no space for a new message in the pipe, either re-use
         the cache chunk or allocate a new chunk if it does not exist. */
-    if (nn_slow (self->out.pos == NN_MSGQUEUE_GRANULARITY)) {
-        if (nn_slow (!self->cache)) {
-            self->cache = nn_alloc (sizeof (struct nn_msgqueue_chunk),
-                "msgqueue chunk");
-            alloc_assert (self->cache);
-            self->cache->next = NULL;
-        }
-        self->out.chunk->next = self->cache;
-        self->out.chunk = self->cache;
-        self->cache = NULL;
-        self->out.pos = 0;
-    }
+//    if (nn_slow (self->out.pos == NN_MSGQUEUE_GRANULARITY)) {
+//        if (nn_slow (!self->cache)) {
+//            self->cache = nn_alloc (sizeof (struct nn_msgqueue_chunk),
+//                "msgqueue chunk");
+//            alloc_assert (self->cache);
+//            self->cache->next = NULL;
+//        }
+//        self->out.chunk->next = self->cache;
+//        self->out.chunk = self->cache;
+//        self->cache = NULL;
+//        self->out.pos = 0;
+//    }
 
     return 0;
 }
@@ -123,24 +124,25 @@ int nn_msgqueue_recv (struct nn_msgqueue *self, struct nn_msg *msg)
         return -EAGAIN;
 
     /*  Move the message from the pipe to the user. */
-    nn_msg_mv (msg, &self->in.chunk->msgs [self->in.pos]);
+  //  nn_msg_mv (msg, &self->out.chunk->msgs [self->out.pos]);
+    nn_msg_cp(msg, &self->out.chunk->msgs [self->out.pos]);
 
     /*  Move to the next position. */
-    ++self->in.pos;
-    if (nn_slow (self->in.pos == NN_MSGQUEUE_GRANULARITY)) {
-        o = self->in.chunk;
-        self->in.chunk = self->in.chunk->next;
-        self->in.pos = 0;
-        if (nn_fast (!self->cache))
-            self->cache = o;
-        else
-            nn_free (o);
-    }
+   // ++self->in.pos;
+//    if (nn_slow (self->in.pos == NN_MSGQUEUE_GRANULARITY)) {
+//        o = self->in.chunk;
+//        self->in.chunk = self->in.chunk->next;
+//        self->in.pos = 0;
+//        if (nn_fast (!self->cache))
+//            self->cache = o;
+//        else
+//            nn_free (o);
+//    }
 
     /*  Adjust the statistics. */
-    --self->count;
-    self->mem -= (nn_chunkref_size (&msg->sphdr) +
-        nn_chunkref_size (&msg->body));
+   // --self->count;
+//    self->mem -= (nn_chunkref_size (&msg->sphdr) +
+//        nn_chunkref_size (&msg->body));
 
     return 0;
 }
